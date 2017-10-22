@@ -1,0 +1,196 @@
+---
+title: "rvest-web scraping in r"
+author: "Chunhui Zhu"
+date: "October 19, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+###Group: A1 & A2
+
+
+##This is top 5-10 data scientist skills in retail trade industry from the finding of nine top retail companies in US, and it is a part of team project 3.
+
+
+##Finding for "Which are the most valued data science skills?"
+##Ans:TeamWrok, Machine Learning, Statistic, R
+
+
+##Method:
+###I perform web scraping skill to gain data scientist job description from six top retail trade companies. And I read in raw data as a string, comparing and matching the skills in the string by using demanding skills in all general data science skills. After the skill matching, I sum up the demand form 6 top retail companies. My retail trade ranking is based on the highest demand from the research companies.
+
+###R
+```{r setup, eco=FALSE}
+library(XML)
+library(rvest)
+library(RCurl)
+library(xlsx)
+library(stringr)
+library(tidyr)
+library(urltools)
+library(dplyr)
+library(plotly)
+library(ggplot2)
+```
+
+##Part 1 : Read in raw data from html Webpages
+
+####Job 1 
+```{r}
+link1<-"https://careers.walmart.com/us/jobs/883210BR-data-scientist-sunnyvale-ca"
+web1<-read_html(link1)
+job1<-web1 %>% html_node(".qualification__value ") %>% html_text()
+```
+
+####Job 2
+```{r}
+link2<-"https://careers.homedepot.com/job/7720425/data-scientist-space-optimization-atlanta-ga/"
+web2<-read_html(link2)
+job2<-web2 %>% html_node("#gtm-jobdetail-desc") %>% html_text()
+```
+
+####Job 3
+```{r}
+link3<-"https://jobs.cvshealth.com/job/woonsocket/senior-manager-data-science/5770/5560710"
+web3<-read_html(link3)
+job3<-web3 %>% html_node(".ats-description") %>% html_text()
+```
+
+
+####Job 4
+```{r}
+link4<-"https://www.glassdoor.com/job-listing/principal-data-scientist-target-JV_IC2940587_KO0,24_KE25,31.htm?jl=2552587569&ctt=1508462573479"
+web4<-read_html(link4)
+job4<-web4 %>% html_node(".desc") %>% html_text()
+```
+
+####Job 5
+```{r}
+link5<-"http://careers.lb.com/job/7671684/data-scientist-bangalore-in/"
+web5<-read_html(link5)
+job5<-web5 %>% html_node("#gtm-jobdetail-desc") %>% html_text()
+```
+
+
+####Job 6
+```{r}
+link6<-"https://www.ziprecruiter.com/jobs/j-c-penney-corporation-inc-da33e2ae/senior-data-scientist-big-data-9f3e9a31"
+web6<-read_html(link6)
+job6<-web6 %>% html_node("ul") %>% html_text()
+```
+
+
+##Part 2 Built a data frame
+
+###Grab company's name from url text
+```{r}
+Company<-c(link1,link2,link3,link4,link5,link6)
+Company<-urltools::domain(Company)
+Company<-gsub(".*\\.(.*)\\..*","\\1", Company, perl=T)
+Company[4]<-"Target"
+Company[5]<-"JCPenny"
+```
+
+
+###Creat a table t 
+```{r}
+requirement<-c(job1,job2,job3,job4,job5,job6)
+t<-data.frame(Company,requirement)
+t
+```
+
+
+###Creat a function to check Key word in a string
+```{r}
+x<-""
+y<-function(x){
+      r<- c(0,0,0,0,0,0) 
+      count=0
+      for (i in 0:nrow(t)){
+            if (isTRUE(grepl(x, t$requirement[i]))){ 
+                 r[i]=1
+                 i=i+1
+            }
+            else{i=i+1}
+      }
+      return(r)
+}
+```
+
+
+###Creat skill binary data set
+```{r}
+MachineLearning<-y("machine learning")
+Model<-y("model")
+Statistic<-y("statistic")
+BA<-y("businese analytic")
+
+#Combine two cases
+BigD<-y("big data")
+LargeD<-y("large data")
+BigData<-BigD+LargeD
+
+R<-y("R")
+DataMining<-y("data mining")
+Py<-y("Python")
+Excel<-y("Excel")
+VBA<-y("VBA")
+SAS<-y("SAS")
+SPSS<-y("SPSS")
+Mathlab<-y("Mathlab")
+
+SQL<-y("SQL")
+Java<-y("java")
+Hadoop<-y("Hadoop")
+c<-y("C\\+\\+")
+Scala<-y("scala")
+Hive<-y("Hive")
+Perl<-y("Perl")
+Spark<-y("Spark")
+Tableau<-y("Tableau")
+Teradata<-y("teradata")
+
+Speak<-y("Communication")
+Write<-y("write")
+Leadership<-y("leadership")
+TeamWork<-y("team")
+
+
+k<-data.frame(MachineLearning,Model,Statistic,BA,BigData,R,DataMining,Py,Excel,VBA,SAS,SPSS ,Mathlab,SQL,Java,Hadoop,c,Scala,Hive,Perl,Spark,Tableau,Teradata,Speak,Write,Leadership,TeamWork)
+
+k
+```
+
+
+##Part 3: Statistic Result
+
+###Find top 9 skills based on job demand
+
+```{r}
+sumCol<-colSums(k, na.rm = FALSE)
+skill<-c("MachineLearning","Model","Statistic","BA","BigData","R","DataMining","Py","Excel","VBA","SAS","SPSS","Mathlab","SQL","Java","Hadoop","c","Scala","Hive","Perl","Spark","Tableau","Teradata","Speak","Write","Leadership","TeamWork")
+
+a<-rbind(skill,sumCol)
+a<-as.data.frame(t(a))
+
+a$sumCol<- as.numeric(as.character(a$sumCol))
+a<-a[order(a$sumCol)[1:27],]
+plot_ly(a, x = ~sumCol, y = ~skill, type = 'bar', orientation = 'h', name = 'top skils for Data Scientist in retail trade')
+```
+
+
+```{r}
+topmost<-a[order(a$sumCol,decreasing=TRUE )[1:9],]
+ggplot(topmost, aes(x = topmost$skill, y = topmost$sumCol, fill = topmost$sumCol)) + 
+  geom_bar(stat = "identity") +
+  xlab("Skills") + 
+  ylab("Frequency") + 
+  theme(legend.position = "none",  
+        axis.text.x = element_text(angle = 65, hjust = 1)) +
+  ggtitle("Topmost Skills of Data Scientist in Retail Trade")  
+
+```
+
+
+
